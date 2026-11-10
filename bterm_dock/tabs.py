@@ -56,6 +56,7 @@ class TabStrip(Gtk.ScrolledWindow):
         self.row.pack_start(tab, False, False, 0)
         self.row.reorder_child(self.plus, -1)
         tab.show_all()
+        self.row.queue_draw()
         select.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, self.targets, Gdk.DragAction.MOVE)
         select.drag_source_set_icon_name(icon)
         tab.drag_dest_set(Gtk.DestDefaults(0), self.targets, Gdk.DragAction.MOVE)
@@ -73,6 +74,7 @@ class TabStrip(Gtk.ScrolledWindow):
     def remove_tab(self, _, page, _index):
         page.tab.destroy()
         self.size_tabs()
+        self.row.queue_draw()
 
     def move_tab(self, _, page, index):
         self.row.reorder_child(page.tab, index)
@@ -127,17 +129,21 @@ class TabStrip(Gtk.ScrolledWindow):
         if not ok:
             return False
         Gdk.cairo_set_source_rgba(context, rgba)
+        index = self.notebook.page_num(page)
         if active or hovered:
+            left = 8 if index == 0 else 0
+            right = width - 8 if index == self.notebook.get_n_pages() - 1 else width
             context.move_to(0, height)
-            context.curve_to(6, height, 8, height - 4, 8, height - 9)
-            context.line_to(8, 10)
-            context.curve_to(8, 4, 12, 0, 18, 0)
-            context.line_to(width - 18, 0)
-            context.curve_to(width - 12, 0, width - 8, 4, width - 8, 10)
-            context.line_to(width - 8, height - 9)
-            context.curve_to(width - 8, height - 4, width - 6, height, width, height)
+            if left:
+                context.curve_to(6, height, left, height - 4, left, height - 9)
+            context.line_to(left, 10)
+            context.curve_to(left, 4, left + 4, 0, left + 10, 0)
+            context.line_to(right - 10, 0)
+            context.curve_to(right - 4, 0, right, 4, right, 10)
+            context.line_to(right, height - 9)
+            context.curve_to(right, height - 4, min(right + 2, width), height, width, height)
             context.close_path()
-        elif self.notebook.page_num(page) + 1 != self.notebook.get_current_page():
+        elif index + 1 != self.notebook.get_current_page():
             context.rectangle(width - 1, 8, 1, max(1, height - 16))
         context.fill()
         return False

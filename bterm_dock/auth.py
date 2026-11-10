@@ -7,6 +7,7 @@ import pwd
 from threading import Thread
 
 from ._gtk import GLib, Gtk, Pango
+from .dialogs import DockDialog
 from .widgets import label
 
 PAM_SUCCESS = 0
@@ -107,9 +108,7 @@ def verify_local_password(password):
 
 def confirm_account_password(window, *, title="Доступ к SSH-адресам", action="Разблокировать",
                              subject=None, detail=None, destructive=False):
-    dialog = Gtk.Dialog(title=title, transient_for=window, modal=True, use_header_bar=True,
-                        destroy_with_parent=True)
-    dialog.get_style_context().add_class("dock-dialog")
+    dialog = DockDialog(window, title)
     dialog.set_default_size(420, -1)
     dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL, action, Gtk.ResponseType.OK)
     dialog.set_default_response(Gtk.ResponseType.OK)
@@ -155,8 +154,7 @@ def confirm_account_password(window, *, title="Доступ к SSH-адреса�
             password[:] = bytes(len(password))
         GLib.idle_add(show_result, verified, message)
 
-    dialog.show_all()
-    entry.grab_focus()
+    dialog.initial_focus = entry
     try:
         while dialog.run() == Gtk.ResponseType.OK:
             password = bytearray(entry.get_text(), "utf-8")

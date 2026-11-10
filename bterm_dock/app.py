@@ -1,6 +1,8 @@
 """Жизненный цикл приложения и обработка команд запуска."""
 
+from contextlib import suppress
 import logging
+from pathlib import Path
 import sys
 
 from . import APP_NAME, settings
@@ -106,4 +108,7 @@ class Dock(Gtk.Application):
 
 def main():
     GLib.set_application_name(APP_NAME)
+    # Fastfetch определяет терминал по имени процесса, запустившего оболочку.
+    with suppress(OSError):
+        Path("/proc/self/comm").write_text(APP_NAME, encoding="utf-8")
     return Dock().run(sys.argv)

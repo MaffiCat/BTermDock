@@ -8,6 +8,7 @@ import struct
 
 from . import settings
 from ._gtk import GdkPixbuf, Gio, GLib, Gtk
+from .dialogs import DockDialog, message_dialog
 from .images import PROFILE_ICON_SIZE, load_profile_icon
 from .ssh import validate_profile
 from .widgets import label
@@ -122,18 +123,20 @@ def store_icon(profile, image):
 def choose_backup(window, action):
     saving = action == Gtk.FileChooserAction.SAVE
     title = "Экспорт SSH-профилей" if saving else "Импорт SSH-профилей"
-    chooser = Gtk.FileChooserDialog(title=title, action=action, transient_for=window,
-                                    modal=True, destroy_with_parent=True)
-    chooser.add_buttons("Отмена", Gtk.ResponseType.CANCEL,
-                        "Сохранить" if saving else "Открыть", Gtk.ResponseType.ACCEPT)
-    chooser.set_default_response(Gtk.ResponseType.ACCEPT)
+    dialog = DockDialog(window, title)
+    dialog.set_default_size(820, 520)
+    dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL,
+                       "Сохранить" if saving else "Открыть", Gtk.ResponseType.ACCEPT)
+    dialog.set_default_response(Gtk.ResponseType.ACCEPT)
+    chooser = Gtk.FileChooserWidget(action=action)
+    chooser.connect("file-activated", lambda _: dialog.response(Gtk.ResponseType.ACCEPT))
+    dialog.get_content_area().pack_start(chooser, True, True, 0)
     formats = Gtk.FileFilter()
     formats.set_name("Файлы JSON")
     formats.add_pattern("*.[jJ][sS][oO][nN]")
     chooser.add_filter(formats)
     if saving:
         chooser.set_current_name("btermdock-ssh-profiles.json")
-        chooser.set_do_overwrite_confirmation(True)
         detail = label("Резервная копия содержит адреса и параметры подключений.", wrap=True)
         detail.show()
         chooser.set_extra_widget(detail)
@@ -143,40 +146,53 @@ def choose_backup(window, action):
         all_files.add_pattern("*")
         chooser.add_filter(all_files)
     try:
-        if chooser.run() == Gtk.ResponseType.ACCEPT:
-            if filename := chooser.get_filename():
-                return Path(filename)
+        while dialog.run() == Gtk.ResponseType.ACCEPT:
+            filename = chooser.get_filename()
+            if not filename:
+                continue
+            path = Path(filename)
+            if path.is_dir():
+                chooser.set_current_folder(filename)
+                continue
+            exists = saving and (path.exists() or path.is_symlink())
+            if not exists or confirm_replacement(dialog, path):
+                return path
     finally:
-        chooser.destroy()
+        dialog.destroy()
     return None
 
 
+def confirm_replacement(parent, path):
+    dialog = message_dialog(parent, "Заменить файл?", f"Файл «{path.name}» уже существует.")
+    dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL, "Заменить", Gtk.ResponseType.OK)
+    dialog.get_widget_for_response(Gtk.ResponseType.OK).get_style_context().add_class("destructive-action")
+    result = dialog.run()
+    dialog.destroy()
+    return result == Gtk.ResponseType.OK
+
+
 def export_dialog(window):
-    path = choose_backup(window, Gtk.FileChooserAction.SAVE)
-    if path is None:
-        return
     try:
-        write_backup(path, window.settings["profiles"])
+        if path := choose_backup(window, Gtk.FileChooserAction.SAVE):
+            write_backup(path, window.settings["profiles"])
     except (OSError, ValueError) as error:
         window.show_error("Экспорт не удался", str(error))
 
 
 def import_dialog(window):
-    path = choose_backup(window, Gtk.FileChooserAction.OPEN)
-    if path is None:
-        return False
     try:
+        path = choose_backup(window, Gtk.FileChooserAction.OPEN)
+        if path is None:
+            return False
         imported = read_backup(path)
         current = window.settings["profiles"]
         response = Gtk.ResponseType.APPLY
         if current:
-            dialog = Gtk.MessageDialog(transient_for=window, modal=True,
-                                       message_type=Gtk.MessageType.QUESTION,
-                                       buttons=Gtk.ButtonsType.CANCEL,
-                                       text=f"Профилей в резервной копии — {len(imported)}")
-            dialog.format_secondary_text("При добавлении совпадающие профили пропускаются. "
-                                         "Замена восстанавливает список целиком.")
-            dialog.add_buttons("Заменить список", Gtk.ResponseType.APPLY,
+            dialog = message_dialog(window, f"Профилей в резервной копии — {len(imported)}",
+                                    "При добавлении совпадающие профили пропускаются. "
+                                    "Замена восстанавливает список целиком.")
+            dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL,
+                               "Заменить список", Gtk.ResponseType.APPLY,
                                "Добавить", Gtk.ResponseType.OK)
             dialog.set_default_response(Gtk.ResponseType.OK)
             response = dialog.run()

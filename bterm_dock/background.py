@@ -1,11 +1,20 @@
 """Отрисовка и предпросмотр фона терминала."""
 
+import logging
+from pathlib import Path
+
 import cairo
 
 from ._gtk import Gdk, GLib, GObject, Gtk
+from .dialogs import DockColorButton, DockDialog
 from .images import ImagePicker, load_image
+from .media import VideoPlayer, VideoSource
 from .settings import MAX_BACKGROUND_ZOOM, MIN_BACKGROUND_ZOOM
 from .widgets import button, color, label
+
+
+def load_background(path):
+    return VideoSource(path) if Path(path).suffix.lower() == ".mp4" else load_image(path)
 
 
 class Wallpaper(Gtk.DrawingArea):
@@ -14,6 +23,7 @@ class Wallpaper(Gtk.DrawingArea):
     def __init__(self, background):
         super().__init__()
         self.animation = self.frame = None
+        self.video = self.video_frame = None
         self.timer = 0
         self.dim = 0.72
         self.zoom = 1.0
@@ -25,14 +35,15 @@ class Wallpaper(Gtk.DrawingArea):
         self.connect("realize", self.watch_window)
         self.connect("unrealize", self.unwatch_window)
         self.connect("map", self.resume_animation)
-        self.connect("unmap", lambda _: self.stop_timer())
+        self.connect("unmap", self.pause_animation)
+        self.connect("destroy", lambda _: self.close_video())
 
     def watch_window(self, _):
         window = self.get_toplevel()
         self.window_state_handler = (window, window.connect("window-state-event", self.window_state_changed))
 
     def unwatch_window(self, _):
-        self.stop_timer()
+        self.pause_animation()
         if self.window_state_handler:
             window, handler = self.window_state_handler
             window.disconnect(handler)
@@ -41,16 +52,42 @@ class Wallpaper(Gtk.DrawingArea):
     def window_state_changed(self, _, event):
         if event.changed_mask & Gdk.WindowState.ICONIFIED:
             if event.new_window_state & Gdk.WindowState.ICONIFIED:
-                self.stop_timer()
+                self.pause_animation()
             else:
                 self.resume_animation()
         return False
 
     def resume_animation(self, *_):
+        if self.video and self.animation_visible():
+            self.video.play()
         if self.frame and not self.timer:
             if self.frame.advance(None):
                 self.redraw()
             self.schedule_frame()
+
+    def pause_animation(self, *_):
+        self.stop_timer()
+        if self.video:
+            self.video.pause()
+
+    def animation_visible(self):
+        return self.get_mapped() and not (
+            self.get_toplevel().get_window().get_state() & Gdk.WindowState.ICONIFIED
+        )
+
+    def close_video(self):
+        if self.video:
+            self.video.close()
+            self.video = self.video_frame = None
+
+    def update_video_frame(self, pixbuf):
+        self.video_frame = pixbuf
+        self.redraw()
+
+    def video_error(self, message):
+        logging.getLogger(__name__).warning("Ошибка видеофона: %s", message)
+        self.close_video()
+        self.redraw()
 
     def stop_timer(self):
         if self.timer:
@@ -64,9 +101,13 @@ class Wallpaper(Gtk.DrawingArea):
         self.fill = color(appearance["background_color"]) if appearance["background_color"] else None
         if animation is not self.animation:
             self.stop_timer()
+            self.close_video()
             self.animation = animation
             self.frame = None
-            if animation and not animation.is_static_image():
+            if isinstance(animation, VideoSource):
+                self.video = VideoPlayer(animation, self.update_video_frame, self.video_error)
+                self.resume_animation()
+            elif animation and not animation.is_static_image():
                 self.frame = animation.get_iter(None)
                 self.schedule_frame()
         self.redraw()
@@ -80,7 +121,7 @@ class Wallpaper(Gtk.DrawingArea):
         return self.animation is not None or self.fill is not None
 
     def schedule_frame(self):
-        if not self.get_mapped() or self.get_toplevel().get_window().get_state() & Gdk.WindowState.ICONIFIED:
+        if not self.animation_visible():
             return
         delay = self.frame.get_delay_time()
         if delay >= 0:
@@ -106,7 +147,12 @@ class Wallpaper(Gtk.DrawingArea):
         context.paint()
         if not self.animation:
             return
-        pixbuf = self.frame.get_pixbuf() if self.frame else self.animation.get_static_image()
+        if isinstance(self.animation, VideoSource):
+            pixbuf = self.video_frame
+        else:
+            pixbuf = self.frame.get_pixbuf() if self.frame else self.animation.get_static_image()
+        if pixbuf is None:
+            return
         scale = self.zoom * max(width / pixbuf.get_width(), height / pixbuf.get_height())
         offset_x, offset_y = self.position
         context.save()
@@ -205,10 +251,8 @@ class BackgroundPreview(Gtk.AspectFrame):
 
 
 def edit_background(window, parent=None):
-    dialog = Gtk.Dialog(title="Фон терминала", transient_for=parent or window, modal=True,
-                        destroy_with_parent=True, use_header_bar=True)
-    dialog.get_style_context().add_class("dock-dialog")
-    dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL, "Убрать фото", 1,
+    dialog = DockDialog(parent or window, "Фон терминала")
+    dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL, "Убрать фон", 1,
                        "Применить", Gtk.ResponseType.OK)
     dialog.get_widget_for_response(Gtk.ResponseType.OK).get_style_context().add_class("suggested-action")
     dialog.set_default_response(Gtk.ResponseType.OK)
@@ -227,42 +271,42 @@ def edit_background(window, parent=None):
     preview.set_size_request(350, 260)
     preview.get_style_context().add_class("wallpaper-preview")
     stage.pack_start(preview, True, True, 0)
-    stage.pack_start(label("Перетащите фото в превью, чтобы настроить кадр.", "muted", wrap=True),
+    stage.pack_start(label("Перетащите фон в превью, чтобы настроить кадр.", "muted", wrap=True),
                      False, False, 0)
 
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, width_request=252)
     box.get_style_context().add_class("wallpaper-controls")
     layout.pack_end(box, False, False, 0)
-    box.pack_start(label("Изображение", "dialog-heading"), False, False, 0)
-    box.pack_start(label("PNG, GIF, JPG или JPEG", "muted"), False, False, 0)
-    picker = ImagePicker(dialog, "Выберите фон")
+    box.pack_start(label("Файл фона", "dialog-heading"), False, False, 0)
+    box.pack_start(label("PNG, JPG, GIF или MP4", "muted"), False, False, 0)
+    picker = ImagePicker(dialog, "Выберите фон", allow_video=True)
     if window.settings["background"]:
         picker.set_filename(window.settings["background"])
     box.pack_start(picker, False, False, 0)
     box.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL), False, False, 0)
-    box.pack_start(label("Масштаб фото", "setting-title"), False, False, 0)
+    box.pack_start(label("Масштаб фона", "setting-title"), False, False, 0)
     zoom = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, MIN_BACKGROUND_ZOOM * 100,
                                    MAX_BACKGROUND_ZOOM * 100, 1)
     zoom.set_value(window.settings["background_zoom"] * 100)
     zoom.set_digits(0)
-    zoom.get_accessible().set_name("Масштаб фото")
+    zoom.get_accessible().set_name("Масштаб фона")
     zoom.connect("format-value", lambda _, value: f"{value:.0f}%")
     zoom.add_mark(100, Gtk.PositionType.BOTTOM, None)
-    zoom.set_tooltip_text("При 100% фото заполняет область терминала.")
+    zoom.set_tooltip_text("При 100% фон заполняет область терминала.")
     box.pack_start(zoom, False, False, 0)
-    box.pack_start(label("Приглушение фото", "setting-title"), False, False, 0)
+    box.pack_start(label("Приглушение фона", "setting-title"), False, False, 0)
     dim = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 15, 95, 1)
     dim.set_value(window.settings["dim"] * 100)
     dim.set_digits(0)
-    dim.get_accessible().set_name("Приглушение фото")
+    dim.get_accessible().set_name("Приглушение фона")
     dim.connect("format-value", lambda _, value: f"{value:.0f}%")
     box.pack_start(dim, False, False, 0)
     wallpaper = window.workspace.wallpaper
     fill_row = Gtk.Box(spacing=12)
     use_fill = Gtk.CheckButton(label="Свой цвет фона")
     use_fill.set_active(wallpaper.fill is not None)
-    fill_picker = Gtk.ColorButton.new_with_rgba(wallpaper.fill or wallpaper.base)
-    fill_picker.set_title("Цвет фона под фото")
+    fill_picker = DockColorButton(title="Цвет фона под фото", rgba=wallpaper.fill or wallpaper.base,
+                                  show_editor=True)
     fill_picker.get_accessible().set_name("Цвет фона под фото")
     fill_picker.set_sensitive(use_fill.get_active())
     fill_row.pack_start(use_fill, True, True, 0)
@@ -305,7 +349,7 @@ def edit_background(window, parent=None):
     def selected_image(path):
         nonlocal preview_image, preview_path, position
         if path != preview_path:
-            preview_image = load_image(path) if path else None
+            preview_image = load_background(path) if path else None
             preview_path = path
             position = (0.0, 0.0)
         return preview_image
@@ -328,7 +372,6 @@ def edit_background(window, parent=None):
     fill_picker.connect("color-set", update_preview)
     update_preview()
     dialog.set_default_size(820, 480)
-    dialog.show_all()
     while (response := dialog.run()) in (1, Gtk.ResponseType.OK):
         path = (picker.get_filename() or "") if response == Gtk.ResponseType.OK else ""
         try:
@@ -345,5 +388,6 @@ def edit_background(window, parent=None):
                 app_window.workspace.set_wallpaper(image)
             break
     else:
-        window.workspace.set_wallpaper(original_image, original_appearance)
+        if window.get_realized():
+            window.workspace.set_wallpaper(original_image, original_appearance)
     dialog.destroy()

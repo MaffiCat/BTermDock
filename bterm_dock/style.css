@@ -14,6 +14,21 @@ headerbar.titlebar, headerbar.dock-header {
 .dock-header { min-height: 44px; padding: 4px 10px; }
 .dock-header .title { font-weight: bold; }
 .dock-header .subtitle { color: @dock_muted; font-size: 9pt; opacity: 1; }
+.dock-dialog-scrim { background-color: rgba(0, 0, 0, 0.42); }
+.dock-dialog-panel {
+    background-color: @dock_base;
+    color: @dock_text;
+    border: 1px solid @dock_border;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+.dock-dialog-header {
+    background: @dock_surface;
+    border-bottom: 1px solid @dock_border;
+    border-radius: 11px 11px 0 0;
+    padding: 5px 8px;
+}
+.dock-dialog-header .title { font-weight: bold; }
 tooltip.background {
     background-color: @dock_panel;
     color: @dock_text;
@@ -230,6 +245,25 @@ vte-terminal { background-color: transparent; }
 .dock-dialog scale trough { background: @dock_border; border-color: @dock_border; }
 .dock-dialog scale highlight { background: @dock_accent; border-color: @dock_accent; }
 .dock-dialog scale slider { background: @dock_panel; border-color: @dock_accent; }
+.wallpaper-controls scale slider,
+.background-color-chooser scale.color slider {
+    min-width: 16px;
+    min-height: 16px;
+    border: 2px solid @dock_base;
+    border-radius: 999px;
+    background: @dock_text;
+}
+.wallpaper-controls scale trough,
+.wallpaper-controls scale highlight {
+    min-height: 4px;
+    border: 0;
+    border-radius: 999px;
+}
+.wallpaper-controls scale highlight { margin: 0; }
+.wallpaper-controls scale slider { margin: -8px; box-shadow: none; }
+.wallpaper-controls scale value { color: @dock_muted; }
+.wallpaper-controls scale marks { margin: 0; }
+.wallpaper-controls scale indicator { min-width: 0; min-height: 0; }
 .dock-dialog check:checked { background: @dock_accent_fill; color: @dock_accent_text; border-color: @dock_accent; }
 .dock-dialog button.theme-choice { padding: 9px; }
 .theme-sample { padding: 9px; border-radius: 6px; }
@@ -243,20 +277,75 @@ vte-terminal { background-color: transparent; }
     border-radius: 8px;
     border: 1px solid @dock_border;
 }
-.gallery-places, .gallery-preview { background: @dock_surface; padding: 14px; }
-.gallery-places { border-right: 1px solid @dock_border; }
-.gallery-preview { border-left: 1px solid @dock_border; }
-.gallery-files {
-    background: @dock_surface;
+.gallery-dialog .dock-dialog-header { min-height: 38px; padding: 5px 12px; }
+.gallery-places, .gallery-preview {
+    background: mix(@dock_surface, @dock_panel, 0.4);
     border: 1px solid @dock_border;
-    border-radius: 9px;
+    border-radius: 10px;
 }
-.gallery-grid { background: @dock_surface; color: @dock_text; }
-.gallery-grid:selected { background: @dock_accent_fill; color: @dock_accent_text; }
-.gallery-path button { padding: 4px 6px; }
-.gallery-path button.gallery-current { background: @dock_accent_fill; color: @dock_accent_text; }
-.dock-dialog button.gallery-place { border-color: transparent; background: transparent; }
-.dock-dialog button.gallery-place:hover { background: @dock_accent_fill; }
+.gallery-places { padding: 7px; }
+.gallery-preview { padding: 10px; }
+.gallery-files, .gallery-preview-stage {
+    background-color: @dock_base;
+    border: 1px solid @dock_border;
+    border-radius: 8px;
+}
+.gallery-grid { background: transparent; color: @dock_text; }
+.gallery-grid:selected {
+    background: @dock_accent_fill;
+    color: @dock_accent_text;
+    border-radius: 7px;
+}
+.gallery-navigation, .gallery-address {
+    background-color: @dock_panel;
+    border: 1px solid @dock_border;
+    border-radius: 8px;
+    padding: 1px;
+}
+.gallery-dialog .gallery-navigation button,
+.gallery-dialog .gallery-address button {
+    background: transparent;
+    border-color: transparent;
+    border-radius: 6px;
+    min-height: 26px;
+    min-width: 22px;
+    padding: 1px 5px;
+}
+.gallery-dialog .gallery-address entry {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    min-height: 26px;
+    padding: 1px 6px;
+}
+.gallery-dialog entry.gallery-search:focus {
+    border-color: @dock_accent;
+    box-shadow: inset 0 0 0 1px alpha(@dock_accent, 0.18);
+}
+.gallery-dialog button.gallery-place {
+    border-color: transparent;
+    background: transparent;
+    padding: 5px 7px;
+}
+.gallery-dialog button.gallery-place:hover,
+.gallery-dialog .gallery-navigation button:hover,
+.gallery-dialog .gallery-address button:hover {
+    background: mix(@dock_panel, @dock_accent_fill, 0.6);
+}
+.gallery-dialog button.gallery-place.gallery-current,
+.gallery-dialog .gallery-address button.gallery-current {
+    background: @dock_accent_fill;
+    color: @dock_accent_text;
+}
+.gallery-dialog .gallery-path button { min-width: 0; }
+.gallery-path image { color: @dock_muted; }
+.gallery-preview-placeholder image {
+    background: @dock_accent_fill;
+    color: @dock_accent;
+    border-radius: 12px;
+    padding: 10px;
+}
+.gallery-preview-details { padding: 3px 2px 1px; }
 .dock-menu {
     background: @dock_panel;
     color: @dock_text;

@@ -3,6 +3,7 @@
 from ._gtk import Gtk
 from .appearance import PALETTES, sidebar_color, theme_palette
 from .background import edit_background
+from .dialogs import DockColorButton, DockDialog, DockFontButton
 from .settings import MAX_SCROLLBACK, MIN_SCROLLBACK
 from .terminal import default_font
 from .widgets import button, color, label
@@ -54,9 +55,7 @@ def theme_button(theme, group, title, icon):
 
 
 def edit_preferences(window):
-    dialog = Gtk.Dialog(title="Настройки BTermDock", transient_for=window, modal=True,
-                        destroy_with_parent=True, use_header_bar=True)
-    dialog.get_style_context().add_class("dock-dialog")
+    dialog = DockDialog(window, "Настройки BTermDock")
     dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL, "Применить", Gtk.ResponseType.OK)
     dialog.get_widget_for_response(Gtk.ResponseType.OK).get_style_context().add_class("suggested-action")
     dialog.set_default_response(Gtk.ResponseType.OK)
@@ -87,7 +86,7 @@ def edit_preferences(window):
     theme_buttons[draft["theme"]].set_active(True)
     appearance.pack_start(choices, False, False, 0)
     custom = Gtk.CheckButton(label="Свой цвет")
-    picker = Gtk.ColorButton()
+    picker = DockColorButton()
     picker.set_title("Цвет SSH-панели")
     picker.get_accessible().set_name("Цвет SSH-панели")
     sidebar_controls = Gtk.Box(spacing=8)
@@ -146,7 +145,7 @@ def edit_preferences(window):
         ("text", "Текст", "Подписи, заголовки и значки."),
         ("accent", "Акцент", "Выбранные элементы и кнопки действий."),
     ):
-        control = Gtk.ColorButton.new_with_rgba(color(palette[key]))
+        control = DockColorButton(rgba=color(palette[key]))
         control.set_title(title)
         control.get_accessible().set_name(title)
         control.connect("color-set", update_custom, key)
@@ -168,8 +167,10 @@ def edit_preferences(window):
     terminal = settings_page("Терминал", "Настройки текста и истории применяются к открытым вкладкам.")
     inherited_font = default_font(window.workspace.terminal_profile)
     use_default_font = Gtk.CheckButton(label="По умолчанию", active=not current["terminal_font"])
-    font = Gtk.FontButton(title="Шрифт терминала", font=current["terminal_font"] or inherited_font,
-                          use_font=True, use_size=False)
+    font = DockFontButton(
+        title="Шрифт терминала", font=current["terminal_font"] or inherited_font,
+        use_font=True, use_size=False,
+    )
     font.get_accessible().set_name("Шрифт терминала")
     font.set_sensitive(not use_default_font.get_active())
     use_default_font.connect("toggled", lambda control: font.set_sensitive(not control.get_active()))
@@ -199,7 +200,6 @@ def edit_preferences(window):
         "Фон терминала", "Выбор файла, положение и приглушение фото с живым превью.", editor)), False, False, 0)
     stack.add_titled(background, "background", "Фон")
 
-    dialog.show_all()
     while dialog.run() == Gtk.ResponseType.OK:
         history.update()
         terminal_options = {"terminal_font": "" if use_default_font.get_active() else font.get_font(),

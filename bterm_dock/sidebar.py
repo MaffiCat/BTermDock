@@ -2,6 +2,7 @@
 
 from ._gtk import Gdk, GLib, Gtk, Pango
 from .auth import confirm_account_password
+from .dialogs import DockDialog
 from .images import ImagePicker, load_profile_icon, profile_avatar
 from .profile_backup import export_dialog, import_dialog
 from .profile_drag import ReorderPreview
@@ -361,7 +362,7 @@ class SSHSidebar(Gtk.Box):
         if index is not None and not self.authorize_address_access():
             return
         profiles = self.settings["profiles"].copy()
-        dialog = Gtk.Dialog(title="SSH-профиль", transient_for=self.window, modal=True)
+        dialog = DockDialog(self.window, "SSH-профиль")
         dialog.add_buttons("Отмена", Gtk.ResponseType.CANCEL, "Сохранить", Gtk.ResponseType.OK)
         dialog.set_default_response(Gtk.ResponseType.OK)
         grid = Gtk.Grid(column_spacing=12, row_spacing=10, margin=16)
@@ -396,8 +397,7 @@ class SSHSidebar(Gtk.Box):
         error_label = label("", wrap=True)
         error_label.get_style_context().add_class("error")
         grid.attach(error_label, 0, len(fields) + 1, 2, 1)
-        dialog.show_all()
-        fields["name"].grab_focus()
+        dialog.initial_focus = fields["name"]
         while dialog.run() == Gtk.ResponseType.OK:
             profile = {field: entry.get_text().strip() for field, entry in fields.items()}
             try:

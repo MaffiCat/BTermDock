@@ -4,7 +4,8 @@ import math
 from pathlib import Path
 
 from ._gtk import Gdk, GdkPixbuf, GLib, GObject, Gtk, Pango
-from .gallery import IMAGE_FORMATS, ImageGallery
+from .gallery import ImageGallery
+from .media import IMAGE_FORMATS, load_thumbnail
 from .widgets import label
 
 PROFILE_ICON_SIZE = 36
@@ -20,17 +21,19 @@ def load_image(path):
 class ImagePicker(Gtk.Button):
     __gsignals__ = {"file-set": (GObject.SignalFlags.RUN_LAST, None, ())}
 
-    def __init__(self, parent, title):
+    def __init__(self, parent, title, *, allow_video=False):
         super().__init__()
         self.parent = parent
         self.title = title
         self.filename = None
         self.last_folder = None
+        self.allow_video = allow_video
+        self.placeholder = "Выбрать файл или ссылку…" if allow_video else "Выбрать изображение…"
         self.get_accessible().set_name(title)
         row = Gtk.Box(spacing=8)
         row.pack_start(Gtk.Image.new_from_icon_name("image-x-generic-symbolic", Gtk.IconSize.BUTTON),
                        False, False, 0)
-        self.caption = label("Выбрать изображение…")
+        self.caption = label(self.placeholder)
         self.caption.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
         self.caption.set_max_width_chars(24)
         row.pack_start(self.caption, True, True, 0)
@@ -44,7 +47,7 @@ class ImagePicker(Gtk.Button):
 
     def set_filename(self, filename):
         self.filename = filename
-        self.caption.set_text(Path(filename).name if filename else "Выбрать изображение…")
+        self.caption.set_text(Path(filename).name if filename else self.placeholder)
         self.set_tooltip_text(filename or self.title)
         return True
 
@@ -52,8 +55,8 @@ class ImagePicker(Gtk.Button):
         self.set_filename(None)
 
     def choose(self, _):
-        gallery = ImageGallery(self.parent, self.title, self.filename, self.last_folder)
-        gallery.show_all()
+        gallery = ImageGallery(self.parent, self.title, self.filename, self.last_folder,
+                               allow_video=self.allow_video)
         response = gallery.run()
         filename = gallery.filename
         self.last_folder = gallery.folder
@@ -64,8 +67,7 @@ class ImagePicker(Gtk.Button):
 
 
 def load_profile_icon(path):
-    return GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 2 * PROFILE_ICON_SIZE,
-                                                2 * PROFILE_ICON_SIZE, True)
+    return load_thumbnail(path, 2 * PROFILE_ICON_SIZE, 2 * PROFILE_ICON_SIZE)
 
 
 def draw_profile_icon(_, context, pixbuf):

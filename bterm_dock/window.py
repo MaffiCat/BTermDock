@@ -6,8 +6,8 @@ import cairo
 
 from . import APP_NAME, settings
 from ._gtk import Gdk, GLib, Gtk
-from .background import edit_background
-from .images import load_image
+from .background import edit_background, load_background
+from .dialogs import message_dialog
 from .preferences import edit_preferences
 from .sidebar import SSHSidebar
 from .terminal import TerminalWorkspace
@@ -57,7 +57,10 @@ class DockWindow(Gtk.ApplicationWindow):
 
         layout = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         layout.get_style_context().add_class("dock-split")
-        self.add(layout)
+        self.active_dialog = None
+        self.dialog_host = Gtk.Overlay()
+        self.dialog_host.add(layout)
+        self.add(self.dialog_host)
         self.sidebar = SSHSidebar(self)
         layout.pack1(self.sidebar, resize=False, shrink=True)
         toggle.connect("toggled", self.toggle_sidebar)
@@ -76,7 +79,8 @@ class DockWindow(Gtk.ApplicationWindow):
             keyval, modifiers = Gtk.accelerator_parse(keys)
             shortcuts.connect(keyval, modifiers, Gtk.AccelFlags.VISIBLE,
                               self.accelerator(action))
-        self.connect("key-press-event", self.workspace.cycle_tabs)
+        self.connect("key-press-event", lambda w, event:
+                     self.active_dialog is None and self.workspace.cycle_tabs(w, event))
         self.connect("delete-event", application.remember_closing_window)
         self.sidebar.refresh_profiles()
         self.show_all()
@@ -86,7 +90,7 @@ class DockWindow(Gtk.ApplicationWindow):
         else:
             path = self.settings["background"]
             try:
-                image = load_image(path) if path else None
+                image = load_background(path) if path else None
             except (GLib.Error, ValueError) as error:
                 self.workspace.set_wallpaper(None)
                 self.show_error("Фон не загрузился", str(error))
@@ -101,18 +105,17 @@ class DockWindow(Gtk.ApplicationWindow):
         toggle.get_accessible().set_name(tooltip)
         toggle.get_child().queue_draw()
 
-    @staticmethod
-    def accelerator(action):
+    def accelerator(self, action):
         def invoke(*_):
-            action()
+            if self.active_dialog is None:
+                action()
             return True
         return invoke
 
     def show_error(self, title, detail):
-        dialog = Gtk.MessageDialog(transient_for=self, modal=True,
-                                   message_type=Gtk.MessageType.ERROR,
-                                   buttons=Gtk.ButtonsType.CLOSE, text=title)
-        dialog.format_secondary_text(detail)
+        dialog = message_dialog(self, title, detail)
+        dialog.add_buttons("Закрыть", Gtk.ResponseType.CLOSE)
+        dialog.set_default_response(Gtk.ResponseType.CLOSE)
         dialog.run()
         dialog.destroy()
 
