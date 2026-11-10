@@ -79,3 +79,7 @@ python3 bterm-dock.py
 | `bterm_dock/_gtk.py`, `bterm_dock/widgets.py` | Подключение GTK и общие элементы интерфейса |
 
 Пользовательские настройки хранятся в `~/.config/zsh-dock/config.json` или в каталоге `$XDG_CONFIG_HOME/zsh-dock`, если эта переменная задана. После правок Python или CSS запустите приложение заново.
+
+## Участники проекта
+
+Автор и сопровождающий BTermDock — [MaffiCat](https://github.com/MaffiCat).
