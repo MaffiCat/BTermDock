@@ -1,0 +1,278 @@
+@define-color dock_tab_hover mix(@dock_surface, @dock_panel, 0.8);
+
+window.background, window.bterm-dock, dialog.background {
+    background-color: @dock_base;
+    color: @dock_text;
+}
+headerbar.titlebar, headerbar.dock-header {
+    background-image: none;
+    background-color: @dock_surface;
+    border-bottom: 1px solid @dock_border;
+    color: @dock_text;
+    box-shadow: none;
+}
+.dock-header { min-height: 44px; padding: 4px 10px; }
+.dock-header .title { font-weight: bold; }
+.dock-header .subtitle { color: @dock_muted; font-size: 9pt; opacity: 1; }
+tooltip.background {
+    background-color: @dock_panel;
+    color: @dock_text;
+    border: 1px solid @dock_border;
+    border-radius: 8px;
+}
+tooltip label { color: @dock_text; }
+
+.bterm-dock button:not(.titlebutton), .dock-dialog button:not(.titlebutton) {
+    background-image: none;
+    background-color: @dock_panel;
+    border: 1px solid @dock_border;
+    border-radius: 8px;
+    box-shadow: none;
+    color: @dock_text;
+    text-shadow: none;
+}
+.bterm-dock button:not(.titlebutton):hover, .dock-dialog button:not(.titlebutton):hover {
+    background-color: mix(@dock_panel, @dock_accent_fill, 0.65);
+}
+.bterm-dock button:not(.titlebutton):disabled, .dock-dialog button:not(.titlebutton):disabled {
+    color: @dock_muted;
+    opacity: 0.57;
+}
+.bterm-dock button:not(.titlebutton):checked, .dock-dialog button.suggested-action,
+.dock-dialog button.theme-choice:checked {
+    background-color: @dock_accent_fill;
+    color: @dock_accent_text;
+    border-color: @dock_accent;
+}
+.dock-dialog button.destructive-action {
+    background-color: #a32b37;
+    color: #fff;
+    border-color: #a32b37;
+}
+.dock-dialog button.destructive-action:hover {
+    background-color: #b33440;
+    border-color: #b33440;
+}
+.bterm-dock button:not(.titlebutton).flat {
+    background-color: transparent;
+    border-color: transparent;
+}
+.bterm-dock button:not(.titlebutton).flat:hover {
+    background-color: @dock_accent_fill;
+    color: @dock_accent_text;
+}
+.bterm-dock .dock-header button.sidebar-toggle {
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0;
+    background-color: @dock_panel;
+    border-color: @dock_border;
+    color: @dock_muted;
+}
+.bterm-dock .dock-header button.sidebar-toggle:checked { color: @dock_text; }
+.bterm-dock .dock-header button.sidebar-toggle:hover {
+    background-color: mix(@dock_panel, @dock_text, 0.08);
+    color: @dock_text;
+}
+
+.dock-side, .reorder-preview { background-color: @dock_sidebar_bg; color: @dock_sidebar_fg; }
+paned.dock-split { background-color: @dock_sidebar_bg; }
+paned.dock-split > separator {
+    min-width: 2px;
+    margin: 0;
+    padding: 0 3px;
+    border: 0;
+    box-shadow: none;
+    background-image: none;
+    background-color: @dock_border;
+    background-clip: content-box;
+}
+paned.dock-split > separator:hover, paned.dock-split > separator:active,
+paned.dock-split > separator:focus { background-color: @dock_accent; }
+.eyebrow { font-size: 9pt; font-weight: bold; letter-spacing: 1px; }
+.side-title { font-size: 20pt; font-weight: bold; }
+.dock-side.narrow .side-title { font-size: 16pt; }
+.muted { color: @dock_muted; }
+.dock-side .eyebrow, .dock-side .muted, .dock-side .profile-address {
+    color: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.72);
+}
+.dock-side entry {
+    border-radius: 8px;
+    border: 1px solid @dock_border;
+    background: @dock_panel;
+    color: @dock_text;
+    box-shadow: none;
+}
+.profile-list { background: transparent; color: @dock_sidebar_fg; }
+.profile-list row { border-radius: 9px; padding: 9px 10px; margin: 2px 0; }
+.profile-list row:hover { background: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.08); }
+.profile-list row:selected {
+    background: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.16);
+    color: @dock_sidebar_fg;
+}
+.profile-list row.drag-card {
+    background: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.19);
+    box-shadow: inset 0 0 0 1px @dock_accent;
+}
+.dock-side.compact .profile-list row { padding: 5px 4px; }
+.profile-avatar {
+    background: @dock_accent_fill;
+    color: @dock_accent_text;
+    border-radius: 18px;
+    font-weight: bold;
+}
+.profile-name { font-weight: bold; }
+.profile-address, .mono-label { font-family: monospace; font-size: 10pt; }
+.dock-actions {
+    background-color: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.05);
+    border: 1px solid mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.14);
+    border-radius: 12px;
+    padding: 7px;
+}
+.bterm-dock .dock-actions button.profile-connect {
+    background-color: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.14);
+    border-color: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.26);
+    color: @dock_sidebar_fg;
+    font-weight: bold;
+    padding: 5px 4px;
+}
+.bterm-dock .dock-actions button.profile-connect image { margin-right: 4px; }
+.bterm-dock .dock-actions button.profile-connect:hover {
+    background-color: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.20);
+    border-color: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.38);
+}
+.dock-side.narrow .dock-actions { padding: 5px; }
+.dock-side.narrow .profile-connect { font-size: 9pt; }
+.profile-action-group {
+    background-color: @dock_sidebar_bg;
+    border-radius: 8px;
+    padding: 2px;
+}
+.bterm-dock .dock-actions button.profile-action {
+    min-width: 0;
+    padding: 4px 1px;
+    border-color: transparent;
+    background-color: transparent;
+    color: @dock_sidebar_fg;
+    font-size: 8.5pt;
+}
+.bterm-dock .dock-actions button.profile-action:hover {
+    background-color: mix(@dock_sidebar_bg, @dock_sidebar_fg, 0.12);
+}
+.bterm-dock .dock-actions button.profile-delete:hover {
+    background-color: #a32b37;
+    color: #fff;
+}
+
+notebook.dock-tabs, notebook.dock-tabs > stack { background: transparent; border: 0; }
+.chrome-tabs, .chrome-tabs viewport {
+    background: @dock_surface;
+}
+.chrome-tabs {
+    border-bottom: 1px solid @dock_border;
+    padding: 5px 6px 0;
+}
+.chrome-tabs button.chrome-select, .chrome-tabs button.chrome-close, .chrome-tabs button.chrome-plus {
+    background-color: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    padding: 0;
+}
+.chrome-tabs button.chrome-select { min-height: 32px; min-width: 0; padding-left: 6px; }
+.chrome-tabs button.chrome-close, .chrome-tabs button.chrome-plus {
+    min-width: 24px;
+    min-height: 24px;
+    border-radius: 13px;
+}
+.bterm-dock .chrome-tabs button.chrome-select:hover,
+.bterm-dock .chrome-tabs button.chrome-close:hover { background-color: transparent; }
+.chrome-tabs button.chrome-close { color: @dock_muted; }
+.bterm-dock .chrome-tabs button.chrome-close:hover { color: @dock_text; }
+.chrome-tabs button.chrome-plus:hover { background: @dock_accent_fill; }
+vte-terminal { background-color: transparent; }
+.dock-scroll trough { background: @dock_surface; }
+.dock-scroll slider { background: @dock_border; border-color: @dock_surface; }
+.dock-status {
+    background: @dock_surface;
+    color: @dock_muted;
+    border-top: 1px solid @dock_border;
+    padding: 6px 12px;
+}
+
+.settings-nav {
+    background: @dock_surface;
+    border: 0;
+    border-right: 1px solid @dock_border;
+    padding: 16px 8px;
+}
+.settings-nav list { background: transparent; }
+.settings-nav row { color: @dock_muted; border-radius: 8px; margin: 2px; }
+.settings-nav row:selected {
+    color: @dock_accent_text;
+    background: @dock_accent_fill;
+    font-weight: bold;
+}
+.dialog-heading { font-weight: bold; font-size: 17pt; }
+.setting-title { font-weight: bold; }
+.settings-card, .wallpaper-controls, .wallpaper-stage {
+    background-color: @dock_surface;
+    border: 1px solid @dock_border;
+    border-radius: 12px;
+}
+.settings-card separator, .wallpaper-controls separator { background: @dock_border; }
+.dock-dialog entry {
+    background-color: @dock_panel;
+    color: @dock_text;
+    border-color: @dock_border;
+    border-radius: 7px;
+}
+.dock-dialog entry selection { background-color: @dock_accent_fill; color: @dock_accent_text; }
+.dock-dialog scale trough { background: @dock_border; border-color: @dock_border; }
+.dock-dialog scale highlight { background: @dock_accent; border-color: @dock_accent; }
+.dock-dialog scale slider { background: @dock_panel; border-color: @dock_accent; }
+.dock-dialog check:checked { background: @dock_accent_fill; color: @dock_accent_text; border-color: @dock_accent; }
+.dock-dialog button.theme-choice { padding: 9px; }
+.theme-sample { padding: 9px; border-radius: 6px; }
+.theme-sample-light { background-color: #eaf2fe; color: #234575; }
+.theme-sample-dark { background-color: #17181b; color: #9cbcff; }
+.theme-sample-oled { background-color: #000; color: #b8a8ff; }
+.theme-sample-custom { background-color: @dock_accent_fill; color: @dock_accent_text; }
+.wallpaper-stage, .wallpaper-controls { padding: 14px; }
+.wallpaper-preview {
+    background-color: @dock_base;
+    border-radius: 8px;
+    border: 1px solid @dock_border;
+}
+.gallery-places, .gallery-preview { background: @dock_surface; padding: 14px; }
+.gallery-places { border-right: 1px solid @dock_border; }
+.gallery-preview { border-left: 1px solid @dock_border; }
+.gallery-files {
+    background: @dock_surface;
+    border: 1px solid @dock_border;
+    border-radius: 9px;
+}
+.gallery-grid { background: @dock_surface; color: @dock_text; }
+.gallery-grid:selected { background: @dock_accent_fill; color: @dock_accent_text; }
+.gallery-path button { padding: 4px 6px; }
+.gallery-path button.gallery-current { background: @dock_accent_fill; color: @dock_accent_text; }
+.dock-dialog button.gallery-place { border-color: transparent; background: transparent; }
+.dock-dialog button.gallery-place:hover { background: @dock_accent_fill; }
+.dock-menu {
+    background: @dock_panel;
+    color: @dock_text;
+    border: 1px solid @dock_border;
+    border-radius: 12px;
+}
+.dock-menu button.menu-action {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px;
+    color: @dock_text;
+    box-shadow: none;
+}
+.dock-menu button.menu-action:hover, .dock-menu button.menu-action:focus {
+    background: @dock_accent_fill;
+    border-color: @dock_border;
+    color: @dock_accent_text;
+}

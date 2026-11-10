@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+/.venv/
+/BTermDock.zip
+/BTermDock-icon-options.png
+/BTermDock-CRT-styles.png
+config.json
+session.json
+btermdock-ssh-profiles*.json

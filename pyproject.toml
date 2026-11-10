@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bterm-dock"
+version = "0.1.0"
+description = "Графический терминал с вкладками, фоном и SSH-профилями."
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.scripts]
+bterm-dock = "bterm_dock.app:main"
+
+[tool.setuptools]
+packages = ["bterm_dock"]
+
+[tool.setuptools.package-data]
+bterm_dock = ["style.css"]
